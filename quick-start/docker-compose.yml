@@ -325,8 +325,8 @@ services:
     command: /app/monitor
     container_name: erda-monitor
     depends_on:
-      #- elasticsearch
-      #- cassandra
+      - elasticsearch
+      - cassandra
       - mysql
     env_file:
       - ./env
@@ -340,8 +340,8 @@ services:
     command: /app/msp
     container_name: erda-msp
     depends_on:
-      #- elasticsearch
-      #- cassandra
+      - elasticsearch
+      - cassandra
       - mysql
     env_file:
       - ./env
@@ -581,6 +581,11 @@ services:
     environment:
       CASSANDRA_USER: cassandra
       CASSANDRA_PASSWORD: cassandra
+    volumes:
+      - type: volume
+        source: erda-cassandra
+        target: /bitnami
+        read_only: false
     ports:
       - "9042:9042"
     restart: always
@@ -589,6 +594,7 @@ services:
   elasticsearch:
     image: bitnami/elasticsearch:6-debian-10
     container_name: erda-elasticsearch
+    entrypoint: "sysctl -w vm.max_map_count=1048575 && /opt/bitnami/scripts/elasticsearch/entrypoint.sh"
     #environment:
     #  discovery.type: single-node
     volumes:
@@ -678,6 +684,7 @@ volumes:
   erda-files: {}
   kratos-sqlite: {}
   erda-elasticsearch: {}
+  erda-cassandra: {}
 
 networks:
   default:
