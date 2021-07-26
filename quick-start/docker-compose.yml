@@ -594,7 +594,6 @@ services:
   elasticsearch:
     image: bitnami/elasticsearch:6-debian-10
     container_name: erda-elasticsearch
-    entrypoint: "sysctl -w vm.max_map_count=1048575 && /opt/bitnami/scripts/elasticsearch/entrypoint.sh"
     #environment:
     #  discovery.type: single-node
     volumes:
