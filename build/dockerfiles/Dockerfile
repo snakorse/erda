@@ -6,6 +6,8 @@ RUN mkdir -p "$GOPATH/src/github.com/erda-project/erda/"
 COPY . "$GOPATH/src/github.com/erda-project/erda/"
 WORKDIR "$GOPATH/src/github.com/erda-project/erda/"
 
+ENV GOPROXY=https://goproxy.cn
+
 ARG MODULE_PATH
 ARG EXTENSION_ZIP_ADDRS
 RUN mkdir -p /tmp/dicehub-extension
