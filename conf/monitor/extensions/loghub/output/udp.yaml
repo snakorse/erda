@@ -18,6 +18,7 @@ logs-exporter-base:
 
 logs-exporter-udp:
     addr: ${MONITOR_LOG_OUTPUT_CONFIG}
+    buffer_size: ${MONITOR_LOG_OUTPUT_UDP_BUFFER_SIZE:16384}
 
 http-server@admin:
     addr: ":7098"

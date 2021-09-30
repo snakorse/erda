@@ -24,8 +24,9 @@ import (
 )
 
 type config struct {
-	Addr    string        `file:"addr"`
-	Timeout time.Duration `file:"timeout"`
+	Addr       string        `file:"addr"`
+	Timeout    time.Duration `file:"timeout"`
+	BufferSize int           `file:"buffer_size" default:"16384"`
 }
 
 type provider struct {
@@ -53,13 +54,15 @@ func (p *provider) newOutput(i int) (exporter.Output, error) {
 	if err != nil {
 		return nil, err
 	}
-	return &udpOutput{udpAddr, conn, p.C.Timeout}, nil
+	conn.SetWriteBuffer(p.C.BufferSize)
+	return &udpOutput{udpAddr, conn, p.C.Timeout, p.C.BufferSize}, nil
 }
 
 type udpOutput struct {
-	addr    *net.UDPAddr
-	conn    *net.UDPConn
-	timeout time.Duration
+	addr       *net.UDPAddr
+	conn       *net.UDPConn
+	timeout    time.Duration
+	bufferSize int
 }
 
 func (o *udpOutput) Write(logkey string, data []byte) error {
@@ -70,6 +73,7 @@ func (o *udpOutput) Write(logkey string, data []byte) error {
 		if err != nil {
 			return err
 		}
+		conn.SetWriteBuffer(o.bufferSize)
 		o.conn = conn
 	}
 	return err
