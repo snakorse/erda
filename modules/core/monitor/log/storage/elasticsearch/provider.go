@@ -20,6 +20,8 @@ import (
 	"strconv"
 	"time"
 
+	"bou.ke/monkey"
+
 	"github.com/olivere/elastic"
 
 	"github.com/erda-project/erda-infra/base/logs"
@@ -35,17 +37,20 @@ import (
 
 type (
 	config struct {
-		QueryTimeout time.Duration `file:"query_timeout" default:"1m"`
-		WriteTimeout time.Duration `file:"write_timeout" default:"1m"`
-		ReadPageSize int           `file:"read_page_size" default:"1024"`
-		IndexType    string        `file:"index_type" default:"log"`
+		QueryTimeout        time.Duration `file:"query_timeout" default:"1m"`
+		WriteTimeout        time.Duration `file:"write_timeout" default:"1m"`
+		ReadPageSize        int           `file:"read_page_size" default:"1024"`
+		IndexType           string        `file:"index_type" default:"log"`
+		BenchMarking        bool          `file:"benchmarking" env:"BENCHMARKING_TEST" default:"true"`
+		BenchMarkingTimeout time.Duration `file:"benchmarking_timeout" env:"BENCHMARKING_TIMEOUT" default:"200ms"`
+		BenchMarkingLogging bool          `file:"benchmarking_logging" env:"BENCHMARKING_LOGGING" default:"false"`
 	}
 	provider struct {
 		Cfg          *config
 		Log          logs.Logger
 		ES1          elasticsearch.Interface `autowired:"elasticsearch@log" optional:"true"`
 		ES2          elasticsearch.Interface `autowired:"elasticsearch" optional:"true"`
-		Loader       loader.Interface        `autowired:"elasticsearch.index.loader@log"`
+		Loader       loader.Interface        `autowired:"elasticsearch.index.loader@log" optional:"true"`
 		Creator      creator.Interface       `autowired:"elasticsearch.index.creator@log" optional:"true"`
 		Retention    retention.Interface     `autowired:"storage-retention-strategy@log" optional:"true"`
 		es           elasticsearch.Interface
@@ -69,35 +74,58 @@ func (p *provider) Init(ctx servicehub.Context) (err error) {
 			return nil
 		})
 	}
+	if p.Cfg.BenchMarking {
+		monkey.Patch((*elastic.Client).PerformRequest, func(c *elastic.Client, ctx context.Context, opt elastic.PerformRequestOptions) (*elastic.Response, error) {
+			if p.Cfg.BenchMarkingLogging {
+				fmt.Printf("benchmarking about to write es: %+v", opt.Body)
+			}
+			if p.Cfg.BenchMarkingTimeout > 0 {
+				time.Sleep(p.Cfg.BenchMarkingTimeout)
+			}
+			return &elastic.Response{
+				StatusCode: 200,
+				Header:     map[string][]string{"Content-Type": {"application/json"}},
+				Body: []byte(`{
+													   "took": 30,
+													   "errors": false,
+													   "items": []
+													}`),
+			}, nil
+		})
+	}
 	return nil
 }
 
 var _ storage.Storage = (*provider)(nil)
 
 func (p *provider) NewWriter(ctx context.Context) (storekit.BatchWriter, error) {
-	if p.Creator == nil || p.Retention == nil {
+	if !p.Cfg.BenchMarking && (p.Creator == nil || p.Retention == nil) {
 		return nil, fmt.Errorf("elasticsearch.index.creator@log and storage-retention-strategy@log is required for Writer")
 	}
 	w := p.es.NewWriter(&elasticsearch.WriteOptions{
 		Timeout: p.Cfg.WriteTimeout,
 		Enc: func(val interface{}) (index, id, typ string, body interface{}, err error) {
 			data := val.(*log.LabeledLog)
-			var wait <-chan error
-			if p.Retention == nil {
-				wait, index = p.Creator.Ensure(data.Tags["dice_org_name"])
+			if p.Cfg.BenchMarking {
+				index = "benchmarking_log"
 			} else {
-				key := p.Retention.GetConfigKey(data.Source, data.Tags)
-				if len(key) > 0 {
-					wait, index = p.Creator.Ensure(data.Tags["dice_org_name"], key)
-				} else {
+				var wait <-chan error
+				if p.Retention == nil {
 					wait, index = p.Creator.Ensure(data.Tags["dice_org_name"])
+				} else {
+					key := p.Retention.GetConfigKey(data.Source, data.Tags)
+					if len(key) > 0 {
+						wait, index = p.Creator.Ensure(data.Tags["dice_org_name"], key)
+					} else {
+						wait, index = p.Creator.Ensure(data.Tags["dice_org_name"])
+					}
 				}
-			}
-			if wait != nil {
-				select {
-				case <-wait:
-				case <-ctx.Done():
-					return "", "", "", nil, storekit.ErrExitConsume
+				if wait != nil {
+					select {
+					case <-wait:
+					case <-ctx.Done():
+						return "", "", "", nil, storekit.ErrExitConsume
+					}
 				}
 			}
 			id = data.ID

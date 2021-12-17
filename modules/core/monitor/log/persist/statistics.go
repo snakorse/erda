@@ -15,6 +15,10 @@
 package persist
 
 import (
+	"fmt"
+	"sync/atomic"
+	"time"
+
 	"github.com/prometheus/client_golang/prometheus"
 
 	"github.com/erda-project/erda/modules/core/monitor/log"
@@ -166,3 +170,34 @@ func getStatisticsLabels(data *log.LabeledLog) []string {
 		scope, scopeID,
 	}
 }
+
+func NewInMemoryStatistics() *InMemoryStatistics {
+	return &InMemoryStatistics{}
+}
+
+type InMemoryStatistics struct {
+	success int32
+}
+
+func (is *InMemoryStatistics) Start() {
+	go func() {
+		timer := time.NewTicker(time.Second * 10)
+		lastSuccess := is.success
+		for {
+			<-timer.C
+			currSuccess := is.success
+			rate := float32(currSuccess-lastSuccess) / 10.0
+			lastSuccess = currSuccess
+			fmt.Printf("=========statisitcs=========\n success per seconds: %v\n\n", rate)
+		}
+	}()
+}
+func (is *InMemoryStatistics) ReadError(err error)                        {}
+func (is *InMemoryStatistics) WriteError(data []interface{}, err error)   {}
+func (is *InMemoryStatistics) ConfirmError(data []interface{}, err error) {}
+func (is *InMemoryStatistics) Success(data []interface{}) {
+	atomic.AddInt32(&is.success, int32(len(data)))
+}
+func (is *InMemoryStatistics) DecodeError(value []byte, err error)           {}
+func (is *InMemoryStatistics) ValidateError(data *log.LabeledLog)            {}
+func (is *InMemoryStatistics) MetadataError(data *log.LabeledLog, err error) {}
