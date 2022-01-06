@@ -26,15 +26,13 @@ import (
 	"github.com/erda-project/erda-infra/providers/i18n"
 	metricpb "github.com/erda-project/erda-proto-go/core/monitor/metric/pb"
 	"github.com/erda-project/erda/modules/msp/apm/service/common/transaction"
-	"github.com/erda-project/erda/modules/msp/apm/service/datasources"
 )
 
 type provider struct {
 	impl.DefaultTable
-	Log        logs.Logger
-	I18n       i18n.Translator               `autowired:"i18n" translator:"msp-i18n"`
-	Metric     metricpb.MetricServiceServer  `autowired:"erda.core.monitor.metric.MetricService"`
-	DataSource datasources.ServiceDataSource `autowired:"component-protocol.components.datasources.msp-service"`
+	Log    logs.Logger
+	I18n   i18n.Translator              `autowired:"i18n" translator:"msp-i18n"`
+	Metric metricpb.MetricServiceServer `autowired:"erda.core.monitor.metric.MetricService"`
 }
 
 // RegisterInitializeOp .

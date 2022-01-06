@@ -33,29 +33,38 @@ type provider struct {
 	custom.TraceInParams
 	Log          logs.Logger
 	I18n         i18n.Translator              `autowired:"i18n"`
-	TraceService metricpb.MetricServiceServer `autowired:"erda.msp.apm.trace.TraceService"`
+	TraceService *query.TraceService          `autowired:"erda.msp.apm.trace.TraceService"`
 	Metric       metricpb.MetricServiceServer `autowired:"erda.core.monitor.metric.MetricService"`
 }
 
 // RegisterInitializeOp .
 func (p *provider) RegisterInitializeOp() (opFunc cptype.OperationFunc) {
 	return func(sdk *cptype.SDK) {
-		//lang := sdk.Lang
-		//statement := "SELECT avg(trace_duration::field),count(trace_id::tag) FROM trace "
-		//queryParams := map[string]*structpb.Value{
-		//	"span_id": structpb.NewStringValue(req.SpanID),
-		//}
-		//queryRequest := &metricpb.QueryWithTableFormatRequest{
-		//	Start:     strconv.FormatInt(p.InParamsPtr.StartTime, 10),
-		//	End:       strconv.FormatInt(p.InParamsPtr.EndTime, 10),
-		//	Statement: statement,
-		//	Params:    queryParams,
-		//}
-		//response, err := p.Metric.QueryWithTableFormat(context.Background(), queryRequest)
-		//if err != nil {
-		//}
+		params := p.TraceInParams.InParamsPtr
 
-		p.StdDataPtr = bubblegraph.NewDataBuilder().WithTitle("test").Build()
+		if params.TenantId == "" {
+			return
+		}
+
+		//lang := sdk.Lang
+		response, err := p.TraceService.GetTraceReqDistribution(context.Background(), *p.TraceInParams.InParamsPtr)
+		if err != nil {
+			p.Log.Error(err)
+		}
+		dataBuilder := bubblegraph.NewDataBuilder().WithTitle("test")
+		for _, row := range response.Results[0].Series[0].Rows {
+			x := row.Values[0].GetStringValue()
+			y := row.Values[1].GetNumberValue()
+			size := row.Values[2].GetNumberValue()
+
+			dataBuilder.WithBubble(bubblegraph.NewBubbleBuilder().
+				WithValueX(x).
+				WithValueY(y).
+				WithValueSize(size).
+				WithDimension("Req Distribution").
+				Build())
+		}
+		p.StdDataPtr = dataBuilder.Build()
 	}
 }
 
@@ -74,7 +83,7 @@ func (p *provider) Init(ctx servicehub.Context) error {
 		compName = ctx.Label()
 	}
 	protocol.MustRegisterComponent(&protocol.CompRenderSpec{
-		Scenario: "transaction-cache-analysis",
+		Scenario: "trace-query",
 		CompName: compName,
 		Creator:  func() cptype.IComponent { return p },
 	})
@@ -87,7 +96,7 @@ func (p *provider) Provide(ctx servicehub.DependencyContext, args ...interface{}
 }
 
 func init() {
-	servicehub.Register("component-protocol.components.transaction-cache-analysis.reqDistribution", &servicehub.Spec{
+	servicehub.Register("component-protocol.components.trace-query.reqDistribution", &servicehub.Spec{
 		Creator: func() servicehub.Provider { return &provider{} },
 	})
 }

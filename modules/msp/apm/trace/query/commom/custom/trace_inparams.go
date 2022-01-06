@@ -28,7 +28,7 @@ type Model struct {
 	StartTime   int64  `json:"startTime"`
 	EndTime     int64  `json:"endTime"`
 	RpcMethod   string `json:"rpcMethod"`
-	HttpMethod  string `json:"httpMethod"`
+	HttpPath    string `json:"httpPath"`
 	Status      string `json:"status"`
 	Limit       int64  `json:"limit"`
 }

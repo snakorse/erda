@@ -12,13 +12,8 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package service_overview
+package components
 
 import (
-	_ "github.com/erda-project/erda/modules/msp/apm/trace/components/trace-query/content"
-	_ "github.com/erda-project/erda/modules/msp/apm/trace/components/trace-query/grid"
-	_ "github.com/erda-project/erda/modules/msp/apm/trace/components/trace-query/head"
-	_ "github.com/erda-project/erda/modules/msp/apm/trace/components/trace-query/page"
-	_ "github.com/erda-project/erda/modules/msp/apm/trace/components/trace-query/table"
-	_ "github.com/erda-project/erda/modules/msp/apm/trace/components/trace-query/table_filter"
+	_ "github.com/erda-project/erda/modules/msp/apm/trace/query/components/trace-query"
 )
