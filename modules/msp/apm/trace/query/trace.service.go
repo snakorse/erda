@@ -554,33 +554,6 @@ func (s *TraceService) GetTraceDebugHistories(ctx context.Context, req *pb.GetTr
 }
 
 func (s *TraceService) GetTraceReqDistribution(ctx context.Context, model custom.Model) (*metricpb.QueryWithInfluxFormatResponse, error) {
-	//	statement := fmt.Sprintf("SELECT target_service_id::tag,http_path::tag,max(elapsed_max::field) " +
-	//		"FROM application_http " +
-	//		"WHERE (target_terminus_key::tag=$terminus_key OR source_terminus_key::tag=$terminus_key) AND target_service_id::tag=$service_id " +
-	//		"GROUP BY http_path::tag " +
-	//		"ORDER BY max(elapsed_max::field) DESC " +
-	//		"LIMIT 5")
-	//	queryParams := map[string]*structpb.Value{
-	//		"terminus_key": structpb.NewStringValue(tenantId),
-	//		"service_id":   structpb.NewStringValue(serviceId),
-	//	}
-	//
-	//	request := &metricpb.QueryWithInfluxFormatRequest{
-	//		Start:     strconv.FormatInt(start, 10),
-	//		End:       strconv.FormatInt(end, 10),
-	//		Statement: statement,
-	//		Params:    queryParams,
-	//	}
-	//	response, err := p.Metric.QueryWithInfluxFormat(ctx, request)
-	//	if err != nil {
-	//		return nil, err
-	//	}
-	//	var items []topn.Item
-	//	rows := response.Results[0].Series[0].Rows
-	//	if rows == nil || len(rows) == 0 {
-	//		return items, nil
-	//	}
-
 	metricsParams := url.Values{}
 	metricsParams.Set("start", strconv.FormatInt(model.StartTime, 10))
 	metricsParams.Set("end", strconv.FormatInt(model.EndTime, 10))
@@ -626,9 +599,9 @@ func (s *TraceService) GetTraceReqDistribution(ctx context.Context, model custom
 		End:       strconv.FormatInt(model.EndTime, 10),
 		Statement: statement,
 		Params:    queryParams,
-		Options: map[string]string{
-			"debug": "true",
-		},
+		//Options: map[string]string{
+		//	"debug": "true",
+		//},
 	}
 	//	     p.Metric.QueryWithInfluxFormat(ctx, request)
 	return s.p.Metric.QueryWithInfluxFormat(ctx, queryRequest)

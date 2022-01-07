@@ -15,7 +15,10 @@
 package req_distribution
 
 import (
+	"context"
+	"github.com/erda-project/erda/pkg/math"
 	"reflect"
+	"time"
 
 	"github.com/erda-project/erda-infra/base/logs"
 	"github.com/erda-project/erda-infra/base/servicehub"
@@ -25,7 +28,8 @@ import (
 	"github.com/erda-project/erda-infra/providers/component-protocol/protocol"
 	"github.com/erda-project/erda-infra/providers/i18n"
 	metricpb "github.com/erda-project/erda-proto-go/core/monitor/metric/pb"
-	"github.com/erda-project/erda/modules/msp/apm/trace/components/commom/custom"
+	"github.com/erda-project/erda/modules/msp/apm/trace/query"
+	"github.com/erda-project/erda/modules/msp/apm/trace/query/commom/custom"
 )
 
 type provider struct {
@@ -52,9 +56,14 @@ func (p *provider) RegisterInitializeOp() (opFunc cptype.OperationFunc) {
 			p.Log.Error(err)
 		}
 		dataBuilder := bubblegraph.NewDataBuilder().WithTitle("test")
+		rows := response.Results[0].Series[0].Rows
+		if rows == nil || len(rows) == 0 {
+			p.StdDataPtr = dataBuilder.Build()
+			return
+		}
 		for _, row := range response.Results[0].Series[0].Rows {
 			x := row.Values[0].GetStringValue()
-			y := row.Values[1].GetNumberValue()
+			y := math.DecimalPlacesWithDigitsNumber(row.Values[1].GetNumberValue()/float64(time.Millisecond), 2)
 			size := row.Values[2].GetNumberValue()
 
 			dataBuilder.WithBubble(bubblegraph.NewBubbleBuilder().
