@@ -16,7 +16,6 @@ package req_distribution
 
 import (
 	"context"
-	"github.com/erda-project/erda/pkg/math"
 	"reflect"
 	"time"
 
@@ -24,12 +23,14 @@ import (
 	"github.com/erda-project/erda-infra/base/servicehub"
 	"github.com/erda-project/erda-infra/providers/component-protocol/components/bubblegraph"
 	"github.com/erda-project/erda-infra/providers/component-protocol/components/bubblegraph/impl"
+	"github.com/erda-project/erda-infra/providers/component-protocol/cpregister"
 	"github.com/erda-project/erda-infra/providers/component-protocol/cptype"
 	"github.com/erda-project/erda-infra/providers/component-protocol/protocol"
 	"github.com/erda-project/erda-infra/providers/i18n"
 	metricpb "github.com/erda-project/erda-proto-go/core/monitor/metric/pb"
 	"github.com/erda-project/erda/modules/msp/apm/trace/query"
 	"github.com/erda-project/erda/modules/msp/apm/trace/query/commom/custom"
+	"github.com/erda-project/erda/pkg/math"
 )
 
 type provider struct {
@@ -105,7 +106,9 @@ func (p *provider) Provide(ctx servicehub.DependencyContext, args ...interface{}
 }
 
 func init() {
-	servicehub.Register("component-protocol.components.trace-query.reqDistribution", &servicehub.Spec{
+	name := "component-protocol.components.trace-query.reqDistribution"
+	cpregister.AllExplicitProviderCreatorMap[name] = nil
+	servicehub.Register(name, &servicehub.Spec{
 		Creator: func() servicehub.Provider { return &provider{} },
 	})
 }

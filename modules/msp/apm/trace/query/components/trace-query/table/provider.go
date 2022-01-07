@@ -21,79 +21,80 @@ import (
 	"github.com/erda-project/erda-infra/base/servicehub"
 	"github.com/erda-project/erda-infra/providers/component-protocol/components/table"
 	"github.com/erda-project/erda-infra/providers/component-protocol/components/table/impl"
+	"github.com/erda-project/erda-infra/providers/component-protocol/cpregister"
 	"github.com/erda-project/erda-infra/providers/component-protocol/cptype"
 	"github.com/erda-project/erda-infra/providers/component-protocol/protocol"
+	"github.com/erda-project/erda-infra/providers/component-protocol/utils/cputil"
 	"github.com/erda-project/erda-infra/providers/i18n"
 	metricpb "github.com/erda-project/erda-proto-go/core/monitor/metric/pb"
-	"github.com/erda-project/erda/modules/msp/apm/service/common/transaction"
+	"github.com/erda-project/erda-proto-go/msp/apm/trace/pb"
+	"github.com/erda-project/erda/modules/msp/apm/trace/query"
+	"github.com/erda-project/erda/modules/msp/apm/trace/query/commom/custom"
+	"github.com/erda-project/erda/modules/msp/apm/trace/query/commom/trace"
 )
 
 type provider struct {
 	impl.DefaultTable
-	Log    logs.Logger
-	I18n   i18n.Translator              `autowired:"i18n" translator:"msp-i18n"`
-	Metric metricpb.MetricServiceServer `autowired:"erda.core.monitor.metric.MetricService"`
+	custom.TraceInParams
+	Log          logs.Logger
+	I18n         i18n.Translator              `autowired:"i18n" translator:"msp-i18n"`
+	TraceService *query.TraceService          `autowired:"erda.msp.apm.trace.TraceService"`
+	Metric       metricpb.MetricServiceServer `autowired:"erda.core.monitor.metric.MetricService"`
 }
 
 // RegisterInitializeOp .
 func (p *provider) RegisterInitializeOp() (opFunc cptype.OperationFunc) {
 	return func(sdk *cptype.SDK) {
-		//lang := sdk.Lang
-		//startTime := int64(p.StdInParamsPtr.Get("startTime").(float64))
-		//endTime := int64(p.StdInParamsPtr.Get("endTime").(float64))
-		//tenantId := p.StdInParamsPtr.Get("tenantId").(string)
-		//serviceId := p.StdInParamsPtr.Get("serviceId").(string)
-		//layerPath := ""
-		//if x, ok := (*sdk.GlobalState)[transaction.StateKeyTransactionLayerPathFilter]; ok && x != nil {
-		//	layerPath = x.(string)
-		//}
-		//
-		//pageNo, pageSize := transaction.GetPagingFromGlobalState(*sdk.GlobalState)
-		//sorts := transaction.GetSortsFromGlobalState(*sdk.GlobalState)
-		//
-		//data, err := p.DataSource.GetTable(context.WithValue(context.Background(), common.LangKey, lang),
-		//	viewtable.TableTypeTransaction,
-		//	startTime,
-		//	endTime,
-		//	tenantId,
-		//	serviceId,
-		//	common.TransactionLayerHttp,
-		//	layerPath,
-		//	pageNo,
-		//	pageSize,
-		//	sorts...,
-		//)
-		//if err != nil {
-		//	p.Log.Error("failed to get table data: %s", err)
-		//	return
-		//}
-		//
-		//p.StdDataPtr = &table.Data{
-		//	Table: *data,
-		//	Operations: map[cptype.OperationKey]cptype.Operation{
-		//		table.OpTableChangePage{}.OpKey(): cputil.NewOpBuilder().WithServerDataPtr(&table.OpTableChangePageServerData{}).Build(),
-		//		table.OpTableChangeSort{}.OpKey(): cputil.NewOpBuilder().Build(),
-		//	}}
+		params := p.TraceInParams.InParamsPtr
+		pageNo, pageSize := trace.GetPagingFromGlobalState(*sdk.GlobalState)
+		//sorts := trace.GetSortsFromGlobalState(*sdk.GlobalState)
+		//fmt.Println(sorts)
+		_, err := p.TraceService.GetTraces(sdk.Ctx, &pb.GetTracesRequest{
+			TenantID:    params.TenantId,
+			Status:      params.Status,
+			StartTime:   params.StartTime,
+			EndTime:     params.EndTime,
+			Limit:       params.Limit,
+			TraceID:     params.TraceId,
+			DurationMin: params.DurationMin,
+			DurationMax: params.DurationMax,
+			Sort:        "TODO params.",
+			ServiceName: params.ServiceName,
+			RpcMethod:   params.RpcMethod,
+			HttpPath:    params.HttpPath,
+			PageNo:      int64(pageNo),
+			PageSize:    int64(pageSize),
+		})
+		if err != nil {
+			p.Log.Error(err)
+			return
+		}
+		p.StdDataPtr = &table.Data{
+			//Table: *data,
+			Operations: map[cptype.OperationKey]cptype.Operation{
+				table.OpTableChangePage{}.OpKey(): cputil.NewOpBuilder().WithServerDataPtr(&table.OpTableChangePageServerData{}).Build(),
+				table.OpTableChangeSort{}.OpKey(): cputil.NewOpBuilder().Build(),
+			}}
 	}
 }
 
 func (p *provider) RegisterTablePagingOp(opData table.OpTableChangePage) (opFunc cptype.OperationFunc) {
 	return func(sdk *cptype.SDK) {
-		(*sdk.GlobalState)[transaction.StateKeyTransactionPaging] = opData.ClientData
+		(*sdk.GlobalState)[trace.StateKeyTracePaging] = opData.ClientData
 		p.RegisterInitializeOp()(sdk)
 	}
 }
 
 func (p *provider) RegisterTableChangePageOp(opData table.OpTableChangePage) (opFunc cptype.OperationFunc) {
 	return func(sdk *cptype.SDK) {
-		(*sdk.GlobalState)[transaction.StateKeyTransactionPaging] = opData.ClientData
+		(*sdk.GlobalState)[trace.StateKeyTracePaging] = opData.ClientData
 		p.RegisterInitializeOp()(sdk)
 	}
 }
 
 func (p *provider) RegisterTableSortOp(opData table.OpTableChangeSort) (opFunc cptype.OperationFunc) {
 	return func(sdk *cptype.SDK) {
-		(*sdk.GlobalState)[transaction.StateKeyTransactionSort] = opData.ClientData
+		(*sdk.GlobalState)[trace.StateKeyTraceSort] = opData.ClientData
 		p.RegisterInitializeOp()(sdk)
 	}
 }
@@ -146,7 +147,9 @@ func (p *provider) Provide(ctx servicehub.DependencyContext, args ...interface{}
 }
 
 func init() {
-	servicehub.Register("component-protocol.components.trace-query.table", &servicehub.Spec{
+	name := "component-protocol.components.trace-query.table"
+	cpregister.AllExplicitProviderCreatorMap[name] = nil
+	servicehub.Register(name, &servicehub.Spec{
 		Creator: func() servicehub.Provider { return &provider{} },
 	})
 }

@@ -15,11 +15,6 @@
 package service_overview
 
 import (
-	_ "github.com/erda-project/erda/modules/msp/apm/trace/query/components/trace-query/content"
-	_ "github.com/erda-project/erda/modules/msp/apm/trace/query/components/trace-query/grid"
-	_ "github.com/erda-project/erda/modules/msp/apm/trace/query/components/trace-query/head"
-	_ "github.com/erda-project/erda/modules/msp/apm/trace/query/components/trace-query/page"
 	_ "github.com/erda-project/erda/modules/msp/apm/trace/query/components/trace-query/req_distribution"
 	_ "github.com/erda-project/erda/modules/msp/apm/trace/query/components/trace-query/table"
-	_ "github.com/erda-project/erda/modules/msp/apm/trace/query/components/trace-query/table_filter"
 )
