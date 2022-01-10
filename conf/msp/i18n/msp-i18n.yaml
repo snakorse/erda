@@ -48,6 +48,7 @@ en:
   avgDurationUnit: "ms"
   countUnit: "freq"
   rateUnit: "%"
+  slowRequestDistribution: "Slow Request Distribution"
 zh:
   waiting_for_tracing_data: "正在获取链路追踪数据"
   success_get_tracing_data: "获取链路追踪数据成功"
@@ -98,3 +99,4 @@ zh:
   avgDurationUnit: "ms"
   countUnit: "次"
   rateUnit: "%"
+  slowRequestDistribution: "慢调用耗时分布"
