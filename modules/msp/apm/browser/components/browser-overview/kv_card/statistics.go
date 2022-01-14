@@ -53,7 +53,7 @@ func (p *provider) getPv(sdk *cptype.SDK) (*kv.KV, error) {
 func (p *provider) getUv(sdk *cptype.SDK) (*kv.KV, error) {
 	statement := fmt.Sprintf("SELECT distinct(uid::tag) " +
 		"FROM ta_timing " +
-		"WHERE tk::tag=$terminus_key")
+		"WHERE tk::tag=$terminus_key AND uid::tag != '0'")
 
 	params := map[string]*structpb.Value{
 		"terminus_key": structpb.NewStringValue(p.InParamsPtr.TenantId),
