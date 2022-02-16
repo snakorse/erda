@@ -16,9 +16,12 @@ package table
 
 import (
 	"context"
+	"fmt"
+	"strconv"
 	"time"
 
 	"github.com/ahmetb/go-linq/v3"
+	"google.golang.org/protobuf/types/known/structpb"
 
 	"github.com/erda-project/erda-infra/base/logs"
 	"github.com/erda-project/erda-infra/base/servicehub"
@@ -29,6 +32,7 @@ import (
 	"github.com/erda-project/erda-infra/providers/component-protocol/utils/cputil"
 	"github.com/erda-project/erda-infra/providers/i18n"
 	monitorpb "github.com/erda-project/erda-proto-go/core/monitor/alert/pb"
+	metricpb "github.com/erda-project/erda-proto-go/core/monitor/metric/pb"
 	"github.com/erda-project/erda/modules/msp/apm/alert/components/msp-alert-event-list/common"
 )
 
@@ -37,6 +41,7 @@ type provider struct {
 	Log                 logs.Logger
 	I18n                i18n.Translator              `autowired:"i18n" translator:"msp-alert-event-list"`
 	MonitorAlertService monitorpb.AlertServiceServer `autowired:"erda.core.monitor.alert.AlertService"`
+	Metric              metricpb.MetricServiceServer `autowired:"erda.core.monitor.metric.MetricService"`
 }
 
 func (p *provider) RegisterInitializeOp() (opFunc cptype.OperationFunc) {
@@ -149,8 +154,6 @@ func (p *provider) queryAlertEvents(sdk *cptype.SDK, ctx context.Context, params
 		return nil, err
 	}
 
-	// todo@ggp calc related event history count
-
 	t := &table.Table{
 		Columns: table.ColumnsInfo{
 			Orders: []table.ColumnKey{"Name", "AlertName", "RuleName", "TriggerCount", "AlertLevel", "AlertState", "AlertSource", "LastTriggerTime"},
@@ -170,12 +173,30 @@ func (p *provider) queryAlertEvents(sdk *cptype.SDK, ctx context.Context, params
 	}
 
 	for _, item := range events.Items {
+		reqParams := map[string]*structpb.Value{
+			"eventId": structpb.NewStringValue(item.Id),
+		}
+		statement := fmt.Sprintf("SELECT count(timestamp) FROM analyzer_alert " +
+			"WHERE family_id::tag=$eventId")
+		resp, err := p.Metric.QueryWithInfluxFormat(ctx, &metricpb.QueryWithInfluxFormatRequest{
+			Start:     "0",
+			End:       strconv.FormatInt(time.Now().UnixNano()/1e6, 10),
+			Statement: statement,
+			Params:    reqParams,
+		})
+		triggerCount := float64(0)
+		if err != nil {
+			return nil, err
+		}
+		if resp != nil {
+			triggerCount = resp.Results[0].Series[0].Rows[0].Values[0].GetNumberValue()
+		}
 		t.Rows = append(t.Rows, table.Row{
 			ID: table.RowID(item.Id),
 			CellsMap: map[table.ColumnKey]table.Cell{
 				"Name":            table.NewTextCell(item.Name).Build(),
 				"AlertName":       table.NewTextCell(item.AlertName).Build(),
-				"TriggerCount":    table.NewTextCell("todo").Build(),
+				"TriggerCount":    table.NewTextCell(strconv.FormatInt(int64(triggerCount), 10)).Build(),
 				"AlertLevel":      table.NewTextCell(item.AlertLevel).Build(),
 				"AlertState":      table.NewTextCell(item.AlertState).Build(),
 				"AlertSource":     table.NewTextCell(item.AlertSource).Build(),

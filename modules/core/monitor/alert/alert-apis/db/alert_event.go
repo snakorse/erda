@@ -87,7 +87,7 @@ func (db *AlertEventDB) QueryByCondition(scope, scopeId string, condition *Alert
 	query = db.buildSortSqlPart(query, sorts)
 	query = query.Offset((pageNo - 1) * pageSize).Limit(pageSize)
 	err := query.Find(&result).Error
-	if !gorm.IsRecordNotFoundError(err) {
+	if gorm.IsRecordNotFoundError(err) {
 		return nil, err
 	}
 	return result, nil
