@@ -186,9 +186,9 @@ func (p *provider) queryAlertEvents(sdk *cptype.SDK, ctx context.Context, params
 		})
 		triggerCount := float64(0)
 		if err != nil {
-			return nil, err
+			p.Log.Errorf("query trigger count error, eventId: %s, err: \n %s", item.Id, err)
 		}
-		if resp != nil {
+		if resp != nil && resp.Results != nil {
 			triggerCount = resp.Results[0].Series[0].Rows[0].Values[0].GetNumberValue()
 		}
 		t.Rows = append(t.Rows, table.Row{
@@ -204,7 +204,6 @@ func (p *provider) queryAlertEvents(sdk *cptype.SDK, ctx context.Context, params
 			},
 		})
 	}
-
 	return t, nil
 }
 
