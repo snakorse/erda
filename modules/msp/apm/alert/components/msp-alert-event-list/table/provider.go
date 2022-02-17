@@ -25,6 +25,7 @@ import (
 
 	"github.com/erda-project/erda-infra/base/logs"
 	"github.com/erda-project/erda-infra/base/servicehub"
+	"github.com/erda-project/erda-infra/providers/component-protocol/components/commodel"
 	"github.com/erda-project/erda-infra/providers/component-protocol/components/table"
 	"github.com/erda-project/erda-infra/providers/component-protocol/components/table/impl"
 	"github.com/erda-project/erda-infra/providers/component-protocol/cpregister"
@@ -156,15 +157,22 @@ func (p *provider) queryAlertEvents(sdk *cptype.SDK, ctx context.Context, params
 
 	t := &table.Table{
 		Columns: table.ColumnsInfo{
-			Orders: []table.ColumnKey{"Name", "AlertName", "RuleName", "TriggerCount", "AlertLevel", "AlertState", "AlertSource", "LastTriggerTime"},
+			Orders: []table.ColumnKey{table.ColumnKey(AlertListTableColumnName),
+				table.ColumnKey(AlertListTableColumnAlertName),
+				table.ColumnKey(AlertListTableColumnTriggerCount),
+				table.ColumnKey(AlertListTableColumnAlertLevel),
+				table.ColumnKey(AlertListTableColumnAlertState),
+				table.ColumnKey(AlertListTableColumnAlertSource),
+				table.ColumnKey(AlertListTableColumnLastTriggerTime),
+			},
 			ColumnsMap: map[table.ColumnKey]table.Column{
-				"Name":            {Title: sdk.I18n("Name")},
-				"AlertName":       {Title: sdk.I18n("RuleName")},
-				"TriggerCount":    {Title: sdk.I18n("TriggerCount")},
-				"AlertLevel":      {Title: sdk.I18n("AlertLevel")},
-				"AlertState":      {Title: sdk.I18n("AlertState")},
-				"AlertSource":     {Title: sdk.I18n("AlertSource")},
-				"LastTriggerTime": {Title: sdk.I18n("LastTriggerTime"), EnableSort: true, FieldBindToOrder: "LastTriggerTime"},
+				table.ColumnKey(AlertListTableColumnName):            {Title: sdk.I18n(AlertListTableColumnName)},
+				table.ColumnKey(AlertListTableColumnAlertName):       {Title: sdk.I18n(AlertListTableColumnAlertName)},
+				table.ColumnKey(AlertListTableColumnTriggerCount):    {Title: sdk.I18n(AlertListTableColumnTriggerCount)},
+				table.ColumnKey(AlertListTableColumnAlertLevel):      {Title: sdk.I18n(AlertListTableColumnAlertLevel)},
+				table.ColumnKey(AlertListTableColumnAlertState):      {Title: sdk.I18n(AlertListTableColumnAlertState)},
+				table.ColumnKey(AlertListTableColumnAlertSource):     {Title: sdk.I18n(AlertListTableColumnAlertSource)},
+				table.ColumnKey(AlertListTableColumnLastTriggerTime): {Title: sdk.I18n(AlertListTableColumnLastTriggerTime), EnableSort: true, FieldBindToOrder: AlertListTableColumnLastTriggerTime},
 			},
 		},
 		Total:    uint64(events.Total),
@@ -194,18 +202,28 @@ func (p *provider) queryAlertEvents(sdk *cptype.SDK, ctx context.Context, params
 		t.Rows = append(t.Rows, table.Row{
 			ID: table.RowID(item.Id),
 			CellsMap: map[table.ColumnKey]table.Cell{
-				"Name":            table.NewTextCell(item.Name).Build(),
-				"AlertName":       table.NewTextCell(item.AlertName).Build(),
-				"TriggerCount":    table.NewTextCell(strconv.FormatInt(int64(triggerCount), 10)).Build(),
-				"AlertLevel":      table.NewTextCell(item.AlertLevel).Build(),
-				"AlertState":      table.NewTextCell(item.AlertState).Build(),
-				"AlertSource":     table.NewTextCell(item.AlertSource).Build(),
-				"LastTriggerTime": table.NewTextCell(time.Unix(item.LastTriggerTime/1e3, 0).Format("2006/01/02 15:04:05")).Build(),
+				table.ColumnKey(AlertListTableColumnName):            table.NewTextCell(item.Name).Build(),
+				table.ColumnKey(AlertListTableColumnAlertName):       table.NewTextCell(item.AlertName).Build(),
+				table.ColumnKey(AlertListTableColumnTriggerCount):    table.NewTextCell(strconv.FormatInt(int64(triggerCount), 10)).Build(),
+				table.ColumnKey(AlertListTableColumnAlertLevel):      table.NewTextCell(sdk.I18n(item.AlertLevel)).Build(),
+				table.ColumnKey(AlertListTableColumnAlertState):      table.NewCompleteTextCell(commodel.Text{Text: sdk.I18n(item.AlertState)}).Build(),
+				table.ColumnKey(AlertListTableColumnAlertSource):     table.NewTextCell(sdk.I18n(item.AlertSource)).Build(),
+				table.ColumnKey(AlertListTableColumnLastTriggerTime): table.NewTextCell(time.Unix(item.LastTriggerTime/1e3, 0).Format("2006/01/02 15:04:05")).Build(),
 			},
 		})
 	}
 	return t, nil
 }
+
+const (
+	AlertListTableColumnName            string = "alertListTableColumnName"
+	AlertListTableColumnAlertName       string = "alertListTableColumnAlertName"
+	AlertListTableColumnTriggerCount    string = "alertListTableColumnTriggerCount"
+	AlertListTableColumnAlertLevel      string = "alertListTableColumnAlertLevel"
+	AlertListTableColumnAlertState      string = "alertListTableColumnAlertState"
+	AlertListTableColumnAlertSource     string = "alertListTableColumnAlertSource"
+	AlertListTableColumnLastTriggerTime string = "alertListTableColumnLastTriggerTime"
+)
 
 func init() {
 	cpregister.RegisterProviderComponent(common.ScenarioKey, common.ComponentNameTable, &provider{})

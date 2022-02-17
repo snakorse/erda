@@ -1524,7 +1524,7 @@ func (m *alertService) GetAlertEvents(ctx context.Context, req *pb.GetAlertEvent
 			AlertType:        event.AlertType,
 			AlertIndex:       event.AlertIndex,
 			AlertLevel:       event.AlertLevel,
-			AlertSource:      event.AlertLevel,
+			AlertSource:      event.AlertSource,
 			AlertSubject:     event.AlertSubject,
 			AlertState:       event.AlertState,
 			RuleID:           event.RuleID,
