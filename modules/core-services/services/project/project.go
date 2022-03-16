@@ -135,9 +135,9 @@ func (p *Project) Create(userID string, createReq *apistructs.ProjectCreateReque
 		return nil, errors.Errorf("failed to create project(org id is empty)")
 	}
 	userIDuint, err := strconv.ParseUint(userID, 10, 64)
-	if err != nil {
-		return nil, errors.Wrap(err, "failed to parse userID")
-	}
+	//if err != nil {
+	//	return nil, errors.Wrap(err, "failed to parse userID")
+	//}
 	// 只有 DevOps 类型的项目，才能配置 quota
 	if createReq.Template != apistructs.DevopsTemplate {
 		createReq.ResourceConfigs = nil
@@ -319,9 +319,9 @@ func (p *Project) UpdateWithEvent(ctx context.Context, orgID, projectID int64, u
 // Update 更新项目
 func (p *Project) Update(ctx context.Context, orgID, projectID int64, userID string, updateReq *apistructs.ProjectUpdateBody) (*model.Project, error) {
 	userIDuint, err := strconv.ParseUint(userID, 10, 64)
-	if err != nil {
-		return nil, errors.Wrap(err, "failed to parse userID")
-	}
+	//if err != nil {
+	//	return nil, errors.Wrap(err, "failed to parse userID")
+	//}
 	if rc := updateReq.ResourceConfigs; rc != nil {
 		updateReq.ClusterConfig = map[string]string{
 			"PROD":    updateReq.ResourceConfigs.PROD.ClusterName,
