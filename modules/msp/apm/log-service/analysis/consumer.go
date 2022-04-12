@@ -36,6 +36,7 @@ func (p *provider) invoke(key []byte, value []byte, topic *string, timestamp tim
 	}
 	log := &logs.Log{}
 	if err := json.Unmarshal(value, log); err != nil {
+		p.L.Warnf("xxxxxxxxx failed json.Unmarshal log value: %v", string(value))
 		return err
 	}
 
