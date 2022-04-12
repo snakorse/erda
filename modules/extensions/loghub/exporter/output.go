@@ -34,7 +34,8 @@ type consumer struct {
 type content struct {
 	// encoding.RawBytes 不去解析具体内容
 	ID        encoding.RawBytes            `json:"id"`
-	Timestamp encoding.RawBytes            `json:"timestamp"`
+	Timestamp encoding.RawBytes            `json:"timestamp,omitempty"`
+	Time      encoding.RawBytes            `json:"time,omitempty"`
 	Source    encoding.RawBytes            `json:"source"`
 	Content   encoding.RawBytes            `json:"content"`
 	Offset    encoding.RawBytes            `json:"offset"`
