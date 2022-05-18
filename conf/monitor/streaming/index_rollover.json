@@ -1,5 +1,6 @@
 {
     "conditions": {
-        "max_size": "${INDEX_ROLLOVER_SIZE:20gb}"
+        "max_size": "${INDEX_ROLLOVER_SIZE:20gb}",
+        "max_age": "15d"
     }
 }
